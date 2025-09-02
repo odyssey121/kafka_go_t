@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -32,7 +33,9 @@ func (p *Producer) Produce(message, topic string) error {
 	kafkaMsg := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(message),
-		Key:            []byte("test"),
+		// distribution partitioning using a key
+		Key:       []byte("test"),
+		Timestamp: time.Now(),
 	}
 
 	deliveryChan := make(chan kafka.Event)
