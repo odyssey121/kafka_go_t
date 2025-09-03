@@ -1,8 +1,10 @@
 package consumer
 
 import (
+	"fmt"
 	"kafka_go_t/internal/handler"
 	"strings"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
@@ -51,10 +53,14 @@ func (c *Consumer) Start() {
 			return
 		}
 
-		kafkaMsg, err := c.consumer.ReadMessage(noTimeOut)
+		kafkaMsg, err := c.consumer.ReadMessage(1 * time.Second)
 
 		if err != nil {
-			logrus.Error("consumer read message err: ", err)
+			if err.(kafka.Error).Code() == kafka.ErrTimedOut {
+				continue
+			}
+			logrus.Infof("consumer read message err: %v", err)
+			continue
 		}
 
 		if kafkaMsg == nil {
@@ -62,11 +68,11 @@ func (c *Consumer) Start() {
 		}
 
 		if err = c.handler.HandleMessage(*kafkaMsg, kafkaMsg.TopicPartition.Offset, c.ConsumerNumber); err != nil {
-			logrus.Error("consumer handle message err: ", err)
+			logrus.Error(fmt.Sprintf("consumer handle message err: %v", err))
 		}
 
 		if _, err := c.consumer.StoreMessage(kafkaMsg); err != nil {
-			logrus.Error("consumer store message err:  ", err)
+			logrus.Error(fmt.Sprintf("consumer store message err: %v", err))
 			continue
 		}
 	}
